@@ -1,0 +1,129 @@
+<html>
+    <head>
+        <title>PayFlow Honeypot Dashboard</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 30px; background: #0f172a; color: #e2e8f0; }
+            .card { background: #111827; border-radius: 8px; padding: 20px; margin-bottom: 20px; border: 1px solid #1f2937; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border-bottom: 1px solid #334155; padding: 10px; text-align: left; font-size: 14px; }
+            h1, h2 { margin-top: 0; }
+            .metrics { display: flex; gap: 20px; }
+            .metric { flex: 1; background: #1e293b; padding: 16px; border-radius: 8px; }
+            .charts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+            canvas { width: 100%; height: 260px; background: #0b1220; border-radius: 8px; }
+            .pill { display: inline-block; padding: 6px 10px; border-radius: 999px; background: #1d4ed8; margin-right: 8px; font-size: 12px; }
+            @media (max-width: 900px) { .metrics, .charts { flex-direction: column; display: block; } .metric { margin-bottom: 12px; } }
+        </style>
+    </head>
+    <body>
+        <h1>PayFlow Honeypot Dashboard</h1>
+        <div class="metrics">
+            <div class="metric"><strong>Captured events</strong><br>{{ data.event_count }}</div>
+            <div class="metric"><strong>High risk events</strong><br>{{ data.high_risk_events }}</div>
+            <div class="metric"><strong>Observed countries</strong><br>{{ data.country_counts|length }}</div>
+        </div>
+        <div class="card">
+            <h2>Persona counts</h2>
+            <ul>
+                {% for persona, count in data.persona_counts.items() %}
+                <li>{{ persona }}: {{ count }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="card">
+            <h2>Geo/IP enrichment</h2>
+            <span class="pill">{{ data.ip_scope_counts|length }} IP scopes</span>
+            <span class="pill">{{ data.country_counts|length }} country buckets</span>
+            <ul>
+                {% for country, count in data.country_counts.items() %}
+                <li>{{ country }}: {{ count }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="charts">
+            <div class="card"><h2>Risk distribution</h2><canvas id="riskChart" width="520" height="260"></canvas></div>
+            <div class="card"><h2>Persona distribution</h2><canvas id="personaChart" width="520" height="260"></canvas></div>
+            <div class="card"><h2>Top targeted paths</h2><canvas id="pathChart" width="520" height="260"></canvas></div>
+            <div class="card"><h2>IP scope mix</h2><canvas id="scopeChart" width="520" height="260"></canvas></div>
+        </div>
+        <div class="card">
+            <h2>Top targeted paths</h2>
+            <ul>
+                {% for path, count in data.top_paths %}
+                <li>{{ path }}: {{ count }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="card">
+            <h2>Recent events</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Remote IP</th>
+                        <th>Country</th>
+                        <th>Method</th>
+                        <th>Path</th>
+                        <th>Score</th>
+                        <th>Persona</th>
+                        <th>Reasons</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in data.recent_events %}
+                    <tr>
+                        <td>{{ row.timestamp }}</td>
+                        <td>{{ row.remote_addr }}</td>
+                        <td>{{ row.geo_country }}</td>
+                        <td>{{ row.method }}</td>
+                        <td>{{ row.path }}</td>
+                        <td>{{ row.suspicious_score }}</td>
+                        <td>{{ row.persona }}</td>
+                        <td>{{ row.suspicious_reasons }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <script id="chart-data" type="application/json">{{ chart_payload|safe }}</script>
+        <script>
+            const payload = JSON.parse(document.getElementById('chart-data').textContent);
+            function drawBarChart(canvasId, entries, color) {
+                const canvas = document.getElementById(canvasId);
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#0b1220';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                if (!entries.length) {
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.font = '16px Arial';
+                    ctx.fillText('No data captured yet', 20, 40);
+                    return;
+                }
+                const maxValue = Math.max(...entries.map((entry) => entry[1]), 1);
+                const barWidth = Math.max(36, Math.floor((canvas.width - 80) / entries.length) - 12);
+                entries.forEach((entry, index) => {
+                    const label = String(entry[0]);
+                    const value = entry[1];
+                    const x = 40 + index * (barWidth + 12);
+                    const barHeight = Math.round((value / maxValue) * 160);
+                    const y = canvas.height - 50 - barHeight;
+                    ctx.fillStyle = color[index % color.length];
+                    ctx.fillRect(x, y, barWidth, barHeight);
+                    ctx.fillStyle = '#e2e8f0';
+                    ctx.font = '12px Arial';
+                    ctx.fillText(String(value), x, y - 8);
+                    ctx.save();
+                    ctx.translate(x + 6, canvas.height - 18);
+                    ctx.rotate(-0.35);
+                    ctx.fillText(label.slice(0, 18), 0, 0);
+                    ctx.restore();
+                });
+            }
+            drawBarChart('riskChart', Object.entries(payload.risk), ['#ef4444', '#f59e0b', '#22c55e']);
+            drawBarChart('personaChart', Object.entries(payload.persona), ['#38bdf8', '#818cf8', '#f472b6']);
+            drawBarChart('pathChart', payload.paths, ['#14b8a6', '#0ea5e9', '#6366f1', '#a855f7']);
+            drawBarChart('scopeChart', Object.entries(payload.ip_scope), ['#f97316', '#22c55e', '#eab308', '#94a3b8']);
+        </script>
+    </body>
+</html>

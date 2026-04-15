@@ -1,0 +1,39 @@
+{% extends "base_shell.html" %}
+
+{% block content %}
+<div class="grid">
+    <div class="panel">
+        <div class="panel-body">
+            <h1>Payment orchestration for high-trust merchants</h1>
+            <p>Manage card vault sync, acquirer routing, reconciliation, chargeback review, and treasury settlement from a single operations plane.</p>
+            <div class="metric-row">
+                <div class="metric"><strong>142ms</strong> Median authorization latency</div>
+                <div class="metric"><strong>99.982%</strong> Gateway availability</div>
+                <div class="metric"><strong>31</strong> Connected acquirers</div>
+            </div>
+            <ul class="list">
+                <li>Merchant SSO portal at <strong>/auth/login</strong></li>
+                <li>Administrative console at <strong>/portal/admin</strong></li>
+                <li>Structured API surface for vault, search, and refunds</li>
+            </ul>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-body">
+            <h2 style="margin-top:0;">Operational access</h2>
+            <p class="muted">Authorized settlement operators may continue to the enterprise sign-in workflow.</p>
+            <form method="get" action="/auth/login">
+                <label>Region
+                    <select name="region">
+                        <option value="eu-west">EU West</option>
+                        <option value="us-east">US East</option>
+                        <option value="ap-sg">AP Singapore</option>
+                    </select>
+                </label>
+                <button type="submit">Continue to secure sign-in</button>
+            </form>
+            <p class="muted">Monitoring dashboard available internally at <strong>/dashboard</strong>.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

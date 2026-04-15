@@ -1,0 +1,35 @@
+{% extends "base_shell.html" %}
+
+{% block content %}
+<div class="grid">
+    <div class="panel">
+        <div class="panel-body">
+            <h1>Enterprise operator sign-in</h1>
+            <p>Use your privileged payment operations account to access settlement workflows, tokenized card search, merchant refunds, and risk controls.</p>
+            <div class="metric-row">
+                <div class="metric"><strong>Step 1</strong> Username and password</div>
+                <div class="metric"><strong>Step 2</strong> Device fingerprint review</div>
+                <div class="metric"><strong>Step 3</strong> Out-of-band verification</div>
+            </div>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-body">
+            <h2 style="margin-top:0;">Sign in to PayFlow Control</h2>
+            <form method="post" action="/login">
+                <label>Corporate email or username
+                    <input type="text" name="username" placeholder="svc-payments or you@merchant.example" autocomplete="username">
+                </label>
+                <label>Password
+                    <input type="password" name="password" placeholder="Enter your password" autocomplete="current-password">
+                </label>
+                <label>MFA recovery code
+                    <input type="text" name="recovery_code" placeholder="Optional for locked devices">
+                </label>
+                <button type="submit">Authenticate</button>
+            </form>
+            <p class="muted">All privileged access attempts are logged and reviewed by Trust Operations.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

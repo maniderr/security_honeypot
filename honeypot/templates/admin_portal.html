@@ -1,0 +1,35 @@
+{% extends "base_shell.html" %}
+
+{% block content %}
+<div class="grid">
+    <div class="panel">
+        <div class="panel-body">
+            <h1>Admin control plane</h1>
+            <p>Review vault exports, risk analyst overrides, settlement queue health, and dispute tooling from a unified payment operations console.</p>
+            <ul class="list">
+                <li>Bulk export path: <strong>/admin/export</strong></li>
+                <li>Vault search API: <strong>/api/payments/search</strong></li>
+                <li>Refund processor: <strong>/api/transactions/refund</strong></li>
+            </ul>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-body">
+            <h2 style="margin-top:0;">Privileged re-authentication</h2>
+            <form method="post" action="/login">
+                <label>Admin account
+                    <input type="text" name="username" placeholder="db_admin">
+                </label>
+                <label>Password
+                    <input type="password" name="password" placeholder="Re-enter password">
+                </label>
+                <label>Approval ticket
+                    <input type="text" name="ticket" placeholder="CHG-2026-1042">
+                </label>
+                <button type="submit">Unlock controls</button>
+            </form>
+            <p class="muted">Session upgrades expire after 10 minutes of inactivity.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
