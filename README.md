@@ -1,7 +1,7 @@
 # security_honeypot
-A Python security honeypot that imitates a payment gateway and payment operations platform.
+A Python security honeypot designed to emulate a payment gateway and payment operations platform.
 
-It exposes realistic bait pages, fake payment-data endpoints, attacker interaction logging, Geo/IP enrichment, and a dashboard for reviewing captured events.
+The application exposes realistic bait pages, decoy payment-data endpoints, attacker interaction logging, Geo/IP enrichment, and a dashboard for reviewing captured events.
 
 ## Features
 
@@ -81,9 +81,9 @@ pip install -r requirements.txt
 
 ## Package structure
 
-The application is now organized into focused modules so that routes, database code, logging hooks, templates, and analytics logic are separated.
+The application is organized into focused modules so that routes, database code, logging hooks, templates, and analytics logic are separated.
 
-This makes it easier to extend the honeypot with more endpoints, dashboard features, and analysis workflows without growing a single large file.
+This structure supports future extension of endpoints, dashboard features, and analysis workflows without relying on a single monolithic file.
 
 ## Running the honeypot
 
@@ -91,7 +91,7 @@ This makes it easier to extend the honeypot with more endpoints, dashboard featu
 python3 app.py
 ```
 
-Then open:
+Application root:
 
 ```text
 http://127.0.0.1:5000/
@@ -111,11 +111,33 @@ Run a single attacker session:
 python3 simulate_attackers.py
 ```
 
+Run a specific attacker archetype:
+
+```bash
+python3 simulate_attackers.py --archetype sqli_operator
+```
+
+Run a deterministic simulation using a fixed seed:
+
+```bash
+python3 simulate_attackers.py --archetype recon --seed 42
+```
+
 Run a single session against a custom target:
 
 ```bash
 python3 simulate_attackers.py --host 127.0.0.1 --port 5001
 ```
+
+Available attacker archetypes:
+
+- **`random`**
+- **`recon`**
+- **`credential_stuffer`**
+- **`sqli_operator`**
+- **`admin_hunter`**
+- **`api_abuser`**
+- **`low_slow_intruder`**
 
 Run `N` attacker sessions:
 
@@ -127,6 +149,18 @@ Optional pause tuning between sessions:
 
 ```bash
 python3 run_attackers.py 10 --pause-min 0.1 --pause-max 0.5
+```
+
+Run `N` sessions using a specific archetype:
+
+```bash
+python3 run_attackers.py 10 --archetype api_abuser
+```
+
+Run `N` deterministic sessions with a base seed:
+
+```bash
+python3 run_attackers.py 5 --archetype credential_stuffer --seed 100
 ```
 
 Run `N` sessions against a custom target URL:
@@ -163,13 +197,13 @@ Skip the confirmation prompt:
 python3 reset_data.py --force
 ```
 
-This clears `event_logs` and keeps the seeded decoy payment records intact.
+This operation clears `event_logs` while preserving the seeded decoy payment records.
 
 ## Captured data and analysis
 
 The honeypot stores data in `honeypot.db`.
 
-The dashboard shows:
+The dashboard presents:
 
 - **Captured event totals**
 - **High-risk event counts**
@@ -184,5 +218,5 @@ The dashboard shows:
 1. Start the honeypot with `python3 app.py`.
 2. Generate traffic with `python3 simulate_attackers.py` or `python3 run_attackers.py 10`.
 3. Open `http://127.0.0.1:5000/dashboard`.
-4. Review the event table, Geo/IP enrichment, and charts.
-5. Use `python3 reset_data.py` to clear captured events before a fresh run.
+4. Review captured events, Geo/IP enrichment, and dashboard charts.
+5. Use `python3 reset_data.py` to clear captured events before a new test cycle.
