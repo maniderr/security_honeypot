@@ -9,6 +9,7 @@ from urllib.parse import parse_qs
 from flask import request
 
 from .config import COUNTRY_BY_PREFIX, SUSPICIOUS_MARKERS
+from .scanner_decoys import SCANNER_DECOY_PATHS
 
 
 def utcnow() -> str:
@@ -37,6 +38,9 @@ def evaluate_suspicion(path: str, query_string: str, body_text: str, headers: di
     if any(segment in path.lower() for segment in high_value_paths):
         score += 2
         reasons.append("high_value_path")
+    if path in SCANNER_DECOY_PATHS or any(path.startswith(decoy.rstrip("/") + "/") for decoy in SCANNER_DECOY_PATHS if decoy.endswith("/")):
+        score += 4
+        reasons.append("scanner_decoy")
     if len(body_text) > 500:
         score += 1
         reasons.append("large_body")

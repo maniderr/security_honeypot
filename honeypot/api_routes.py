@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import hashlib
+import random
+import secrets
+import time
 
 from flask import Flask, Response, jsonify, request
 
@@ -13,12 +16,25 @@ from .services import export_payment_records_csv, lookup_cards, search_payments
 def register_api_routes(app: Flask) -> None:
     @app.post("/login")
     def login() -> Response:
+        time.sleep(random.uniform(0.15, 0.45))
         payload = request.get_json(silent=True) or {}
         username = request.form.get("username") or payload.get("username")
         password = request.form.get("password") or payload.get("password")
         if username in DECOY_USERS and password == DECOY_USERS[username]:
             token = hashlib.sha256(f"{username}:{password}".encode()).hexdigest()[:24]
-            return jsonify({"status": "ok", "token": token, "role": "ops"})
+            return jsonify({
+                "status": "mfa_required",
+                "verification_id": secrets.token_hex(12),
+                "challenge": "totp",
+                "hint": f"code sent to ****@{str(username).split('-')[0]}.internal",
+            })
+        if random.random() < 0.08 and username:
+            return jsonify({
+                "status": "mfa_required",
+                "verification_id": secrets.token_hex(12),
+                "challenge": "totp",
+                "hint": "verification code required",
+            })
         return jsonify({"status": "error", "message": "invalid credentials"}), 401
 
     @app.get("/api/payments/search")

@@ -2,128 +2,342 @@
     <head>
         <title>PayFlow Honeypot Dashboard</title>
         <style>
-            body { font-family: Arial, sans-serif; margin: 30px; background: #0f172a; color: #e2e8f0; }
-            .card { background: #111827; border-radius: 8px; padding: 20px; margin-bottom: 20px; border: 1px solid #1f2937; }
+            body { font-family: Arial, sans-serif; margin: 0; padding: 24px; background: #0f172a; color: #e2e8f0; }
+            .card { background: #111827; border-radius: 10px; padding: 18px 20px; margin-bottom: 18px; border: 1px solid #1f2937; }
             table { width: 100%; border-collapse: collapse; }
-            th, td { border-bottom: 1px solid #334155; padding: 10px; text-align: left; font-size: 14px; }
+            th, td { border-bottom: 1px solid #334155; padding: 8px 10px; text-align: left; font-size: 13px; }
+            tr.event-row:hover { background: #1e293b; cursor: pointer; }
             h1, h2 { margin-top: 0; }
-            .metrics { display: flex; gap: 20px; }
-            .metric { flex: 1; background: #1e293b; padding: 16px; border-radius: 8px; }
-            .charts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-            canvas { width: 100%; height: 260px; background: #0b1220; border-radius: 8px; }
-            .pill { display: inline-block; padding: 6px 10px; border-radius: 999px; background: #1d4ed8; margin-right: 8px; font-size: 12px; }
-            @media (max-width: 900px) { .metrics, .charts { flex-direction: column; display: block; } .metric { margin-bottom: 12px; } }
+            h1 { display: flex; justify-content: space-between; align-items: baseline; }
+            h1 .controls { font-size: 14px; font-weight: normal; display: flex; gap: 10px; align-items: center; }
+            .metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 18px; }
+            .metric { background: #1e293b; padding: 14px 16px; border-radius: 10px; border: 1px solid #1f2937; }
+            .metric strong { display: block; font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+            .metric .value { font-size: 22px; font-weight: 700; }
+            .charts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+            canvas { width: 100%; height: 240px; background: #0b1220; border-radius: 8px; display: block; }
+            .filters { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; align-items: end; }
+            .filters label { display: flex; flex-direction: column; font-size: 12px; color: #94a3b8; }
+            .filters input, .filters select { background: #0b1220; border: 1px solid #334155; color: #e2e8f0; border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+            .filters button { background: linear-gradient(135deg,#2563eb,#0ea5e9); color: white; border: none; padding: 10px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+            .filters a.reset { color: #93c5fd; text-decoration: none; align-self: center; font-size: 13px; }
+            .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; background: #1d4ed8; margin-right: 6px; font-size: 11px; }
+            .pill.warn { background: #b45309; }
+            .pill.crit { background: #b91c1c; }
+            .toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #cbd5e1; }
+            #modal-bg { position: fixed; inset: 0; background: rgba(2,6,23,0.75); display: none; align-items: center; justify-content: center; z-index: 40; }
+            #modal { background: #0b1220; border: 1px solid #334155; border-radius: 12px; max-width: 900px; width: 90%; max-height: 85vh; overflow: auto; padding: 22px; }
+            #modal h2 { margin-top: 0; }
+            #modal pre { background: #020617; padding: 12px; border-radius: 8px; overflow-x: auto; font-size: 12px; color: #cbd5e1; border: 1px solid #1e293b; }
+            #modal .close { float: right; background: #1e293b; border: none; color: #e2e8f0; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+            .detail-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 12px 0; font-size: 13px; }
+            .detail-grid div { background: #111827; padding: 8px 10px; border-radius: 6px; }
+            @media (max-width: 900px) { .metrics { grid-template-columns: repeat(2, 1fr); } .charts, .filters { grid-template-columns: 1fr; } }
         </style>
     </head>
     <body>
-        <h1>PayFlow Honeypot Dashboard</h1>
+        <h1>
+            PayFlow Honeypot Dashboard
+            <span class="controls">
+                <span class="pill" id="refresh-indicator">Auto-refresh on</span>
+                <label class="toggle"><input type="checkbox" id="refresh-toggle" checked> live</label>
+            </span>
+        </h1>
+        <div class="card">
+            <h2>Filters</h2>
+            <form class="filters" method="get" action="/dashboard">
+                <label>Persona
+                    <select name="persona">
+                        <option value="">any</option>
+                        {% for persona in options.personas %}
+                        <option value="{{ persona }}" {% if data.filters.persona == persona %}selected{% endif %}>{{ persona }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>Country
+                    <select name="country">
+                        <option value="">any</option>
+                        {% for country in options.countries %}
+                        <option value="{{ country }}" {% if data.filters.country == country %}selected{% endif %}>{{ country }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>IP scope
+                    <select name="ip_scope">
+                        <option value="">any</option>
+                        {% for scope in options.ip_scopes %}
+                        <option value="{{ scope }}" {% if data.filters.ip_scope == scope %}selected{% endif %}>{{ scope }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label>Min score
+                    <input type="number" name="min_score" min="0" max="20" value="{{ data.filters.min_score }}">
+                </label>
+                <label>Session id
+                    <input type="text" name="session_id" value="{{ data.filters.session_id }}" placeholder="hp_session">
+                </label>
+                <div style="display:flex; gap:8px;">
+                    <button type="submit">Apply</button>
+                    <a class="reset" href="/dashboard">reset</a>
+                </div>
+            </form>
+        </div>
         <div class="metrics">
-            <div class="metric"><strong>Captured events</strong><br>{{ data.event_count }}</div>
-            <div class="metric"><strong>High risk events</strong><br>{{ data.high_risk_events }}</div>
-            <div class="metric"><strong>Observed countries</strong><br>{{ data.country_counts|length }}</div>
+            <div class="metric"><strong>Captured events</strong><div class="value" id="m-events">{{ data.event_count }}</div></div>
+            <div class="metric"><strong>High risk</strong><div class="value" id="m-high">{{ data.high_risk_events }}</div></div>
+            <div class="metric"><strong>Unique sessions</strong><div class="value" id="m-sessions">{{ data.unique_sessions }}</div></div>
+            <div class="metric"><strong>Countries</strong><div class="value" id="m-countries">{{ data.country_counts|length }}</div></div>
+            <div class="metric"><strong>Avg latency</strong><div class="value" id="m-latency">{{ data.avg_latency_ms }} ms</div></div>
         </div>
         <div class="card">
-            <h2>Persona counts</h2>
-            <ul>
-                {% for persona, count in data.persona_counts.items() %}
-                <li>{{ persona }}: {{ count }}</li>
-                {% endfor %}
-            </ul>
-        </div>
-        <div class="card">
-            <h2>Geo/IP enrichment</h2>
-            <span class="pill">{{ data.ip_scope_counts|length }} IP scopes</span>
-            <span class="pill">{{ data.country_counts|length }} country buckets</span>
-            <ul>
-                {% for country, count in data.country_counts.items() %}
-                <li>{{ country }}: {{ count }}</li>
-                {% endfor %}
-            </ul>
+            <h2>Activity over last 60 minutes</h2>
+            <canvas id="timeseriesChart" height="200"></canvas>
         </div>
         <div class="charts">
-            <div class="card"><h2>Risk distribution</h2><canvas id="riskChart" width="520" height="260"></canvas></div>
-            <div class="card"><h2>Persona distribution</h2><canvas id="personaChart" width="520" height="260"></canvas></div>
-            <div class="card"><h2>Top targeted paths</h2><canvas id="pathChart" width="520" height="260"></canvas></div>
-            <div class="card"><h2>IP scope mix</h2><canvas id="scopeChart" width="520" height="260"></canvas></div>
+            <div class="card"><h2>Risk distribution</h2><canvas id="riskChart"></canvas></div>
+            <div class="card"><h2>Persona distribution</h2><canvas id="personaChart"></canvas></div>
+            <div class="card"><h2>Top targeted paths</h2><canvas id="pathChart"></canvas></div>
+            <div class="card"><h2>IP scope mix</h2><canvas id="scopeChart"></canvas></div>
         </div>
         <div class="card">
-            <h2>Top targeted paths</h2>
-            <ul>
-                {% for path, count in data.top_paths %}
-                <li>{{ path }}: {{ count }}</li>
-                {% endfor %}
-            </ul>
+            <h2>Top sessions</h2>
+            <table>
+                <thead><tr><th>Session id</th><th>Events</th><th></th></tr></thead>
+                <tbody>
+                    {% for session_id, count in data.top_sessions %}
+                    <tr><td>{{ session_id }}</td><td>{{ count }}</td><td><a href="/dashboard?session_id={{ session_id }}" style="color:#93c5fd;">filter</a></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
         <div class="card">
-            <h2>Recent events</h2>
+            <h2>Recent events <span class="pill" id="recent-count">{{ data.recent_events|length }}</span></h2>
             <table>
                 <thead>
                     <tr>
-                        <th>Timestamp</th>
-                        <th>Remote IP</th>
-                        <th>Country</th>
-                        <th>Method</th>
-                        <th>Path</th>
-                        <th>Score</th>
-                        <th>Persona</th>
-                        <th>Reasons</th>
+                        <th>Timestamp</th><th>Session</th><th>Remote IP</th><th>Country</th>
+                        <th>Method</th><th>Path</th><th>Score</th><th>Persona</th><th>Latency</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="recent-body">
                     {% for row in data.recent_events %}
-                    <tr>
+                    <tr class="event-row" data-event-id="{{ row.id }}">
                         <td>{{ row.timestamp }}</td>
+                        <td>{{ row.session_id }}</td>
                         <td>{{ row.remote_addr }}</td>
                         <td>{{ row.geo_country }}</td>
                         <td>{{ row.method }}</td>
                         <td>{{ row.path }}</td>
                         <td>{{ row.suspicious_score }}</td>
                         <td>{{ row.persona }}</td>
-                        <td>{{ row.suspicious_reasons }}</td>
+                        <td>{{ row.latency_ms }} ms</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+
+        <div id="modal-bg">
+            <div id="modal">
+                <button class="close" onclick="closeModal()">close</button>
+                <h2>Event detail</h2>
+                <div id="modal-body">Loading...</div>
+            </div>
+        </div>
+
         <script id="chart-data" type="application/json">{{ chart_payload|safe }}</script>
         <script>
-            const payload = JSON.parse(document.getElementById('chart-data').textContent);
-            function drawBarChart(canvasId, entries, color) {
-                const canvas = document.getElementById(canvasId);
-                const ctx = canvas.getContext('2d');
+            let payload = JSON.parse(document.getElementById('chart-data').textContent);
+
+            function clearCanvas(ctx, canvas) {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = '#0b1220';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
-                if (!entries.length) {
-                    ctx.fillStyle = '#94a3b8';
-                    ctx.font = '16px Arial';
-                    ctx.fillText('No data captured yet', 20, 40);
-                    return;
-                }
-                const maxValue = Math.max(...entries.map((entry) => entry[1]), 1);
-                const barWidth = Math.max(36, Math.floor((canvas.width - 80) / entries.length) - 12);
-                entries.forEach((entry, index) => {
-                    const label = String(entry[0]);
+            }
+
+            function emptyMessage(ctx, canvas) {
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '14px Arial';
+                ctx.fillText('No data captured yet', 20, 30);
+            }
+
+            function drawBarChart(canvasId, entries, colors) {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) return;
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = canvas.clientWidth * dpr;
+                canvas.height = canvas.clientHeight * dpr;
+                const ctx = canvas.getContext('2d');
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                clearCanvas(ctx, canvas);
+                if (!entries.length) { emptyMessage(ctx, canvas); return; }
+                const w = canvas.clientWidth, h = canvas.clientHeight;
+                const maxValue = Math.max(...entries.map(e => e[1]), 1);
+                const barWidth = Math.max(28, Math.floor((w - 60) / entries.length) - 10);
+                entries.forEach((entry, i) => {
                     const value = entry[1];
-                    const x = 40 + index * (barWidth + 12);
-                    const barHeight = Math.round((value / maxValue) * 160);
-                    const y = canvas.height - 50 - barHeight;
-                    ctx.fillStyle = color[index % color.length];
+                    const x = 30 + i * (barWidth + 10);
+                    const barHeight = Math.round((value / maxValue) * (h - 80));
+                    const y = h - 40 - barHeight;
+                    ctx.fillStyle = colors[i % colors.length];
                     ctx.fillRect(x, y, barWidth, barHeight);
                     ctx.fillStyle = '#e2e8f0';
-                    ctx.font = '12px Arial';
-                    ctx.fillText(String(value), x, y - 8);
+                    ctx.font = '11px Arial';
+                    ctx.fillText(String(value), x, y - 6);
                     ctx.save();
-                    ctx.translate(x + 6, canvas.height - 18);
+                    ctx.translate(x + 4, h - 12);
                     ctx.rotate(-0.35);
-                    ctx.fillText(label.slice(0, 18), 0, 0);
+                    ctx.fillText(String(entry[0]).slice(0, 18), 0, 0);
                     ctx.restore();
                 });
             }
-            drawBarChart('riskChart', Object.entries(payload.risk), ['#ef4444', '#f59e0b', '#22c55e']);
-            drawBarChart('personaChart', Object.entries(payload.persona), ['#38bdf8', '#818cf8', '#f472b6']);
-            drawBarChart('pathChart', payload.paths, ['#14b8a6', '#0ea5e9', '#6366f1', '#a855f7']);
-            drawBarChart('scopeChart', Object.entries(payload.ip_scope), ['#f97316', '#22c55e', '#eab308', '#94a3b8']);
+
+            function drawTimeseries(canvasId, series) {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) return;
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = canvas.clientWidth * dpr;
+                canvas.height = canvas.clientHeight * dpr;
+                const ctx = canvas.getContext('2d');
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                clearCanvas(ctx, canvas);
+                if (!series.length) { emptyMessage(ctx, canvas); return; }
+                const w = canvas.clientWidth, h = canvas.clientHeight;
+                const maxValue = Math.max(...series.map(e => e[1]), 1);
+                const stepX = (w - 40) / Math.max(series.length - 1, 1);
+                ctx.strokeStyle = '#1f2937';
+                ctx.beginPath();
+                for (let i = 0; i <= 4; i++) {
+                    const y = 10 + i * ((h - 40) / 4);
+                    ctx.moveTo(30, y); ctx.lineTo(w - 10, y);
+                }
+                ctx.stroke();
+                ctx.strokeStyle = '#38bdf8';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                series.forEach((entry, i) => {
+                    const x = 30 + i * stepX;
+                    const y = h - 25 - ((entry[1] / maxValue) * (h - 45));
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+                ctx.fillStyle = 'rgba(56,189,248,0.2)';
+                ctx.lineTo(30 + (series.length - 1) * stepX, h - 25);
+                ctx.lineTo(30, h - 25);
+                ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '10px Arial';
+                const labelStride = Math.ceil(series.length / 10);
+                series.forEach((entry, i) => {
+                    if (i % labelStride !== 0) return;
+                    const x = 30 + i * stepX;
+                    ctx.fillText(entry[0], x - 14, h - 8);
+                });
+            }
+
+            function renderCharts() {
+                drawBarChart('riskChart', Object.entries(payload.risk), ['#22c55e', '#f59e0b', '#ef4444']);
+                drawBarChart('personaChart', Object.entries(payload.persona), ['#38bdf8', '#818cf8', '#f472b6', '#fbbf24']);
+                drawBarChart('pathChart', payload.paths, ['#14b8a6', '#0ea5e9', '#6366f1', '#a855f7']);
+                drawBarChart('scopeChart', Object.entries(payload.ip_scope), ['#f97316', '#22c55e', '#eab308', '#94a3b8']);
+                drawTimeseries('timeseriesChart', payload.timeseries || []);
+            }
+
+            function buildQueryString() {
+                const form = document.querySelector('form.filters');
+                if (!form) return '';
+                const params = new URLSearchParams(new FormData(form));
+                for (const [k, v] of Array.from(params.entries())) if (!v) params.delete(k);
+                return params.toString();
+            }
+
+            async function refresh() {
+                try {
+                    const qs = buildQueryString();
+                    const resp = await fetch('/dashboard/data' + (qs ? '?' + qs : ''));
+                    if (!resp.ok) return;
+                    const data = await resp.json();
+                    payload = data.chart_payload;
+                    document.getElementById('m-events').textContent = data.event_count;
+                    document.getElementById('m-high').textContent = data.high_risk_events;
+                    document.getElementById('m-sessions').textContent = data.unique_sessions;
+                    document.getElementById('m-countries').textContent = Object.keys(data.country_counts).length;
+                    document.getElementById('m-latency').textContent = data.avg_latency_ms + ' ms';
+                    const tbody = document.getElementById('recent-body');
+                    tbody.innerHTML = '';
+                    for (const row of data.recent_events) {
+                        const tr = document.createElement('tr');
+                        tr.className = 'event-row';
+                        tr.dataset.eventId = row.id;
+                        tr.innerHTML = `<td>${row.timestamp}</td><td>${row.session_id}</td><td>${row.remote_addr||''}</td><td>${row.geo_country}</td><td>${row.method}</td><td>${row.path}</td><td>${row.suspicious_score}</td><td>${row.persona}</td><td>${row.latency_ms} ms</td>`;
+                        tr.addEventListener('click', () => openModal(row.id));
+                        tbody.appendChild(tr);
+                    }
+                    document.getElementById('recent-count').textContent = data.recent_events.length;
+                    renderCharts();
+                } catch (e) { /* ignore */ }
+            }
+
+            async function openModal(eventId) {
+                document.getElementById('modal-bg').style.display = 'flex';
+                document.getElementById('modal-body').textContent = 'Loading...';
+                try {
+                    const resp = await fetch('/dashboard/events/' + eventId);
+                    const d = await resp.json();
+                    if (d.error) { document.getElementById('modal-body').textContent = 'Event not found'; return; }
+                    const grid = `<div class="detail-grid">
+                        <div><strong>Time:</strong> ${d.timestamp}</div>
+                        <div><strong>Session:</strong> ${d.session_id}</div>
+                        <div><strong>Remote IP:</strong> ${d.remote_addr||''}</div>
+                        <div><strong>Geo:</strong> ${d.geo_country} / ${d.geo_region} / ${d.geo_city}</div>
+                        <div><strong>Scope:</strong> ${d.ip_scope}</div>
+                        <div><strong>Method:</strong> ${d.method}</div>
+                        <div><strong>Path:</strong> ${d.path}</div>
+                        <div><strong>Status:</strong> ${d.status_code}</div>
+                        <div><strong>Score:</strong> ${d.suspicious_score}</div>
+                        <div><strong>Persona:</strong> ${d.persona}</div>
+                        <div><strong>Latency:</strong> ${d.latency_ms} ms</div>
+                        <div><strong>Reasons:</strong> ${d.suspicious_reasons}</div>
+                    </div>`;
+                    const sections = `
+                        <h3>Query string</h3><pre>${d.query_string||'(empty)'}</pre>
+                        <h3>Headers</h3><pre>${escapeHtml(d.headers_json||'')}</pre>
+                        <h3>Body</h3><pre>${escapeHtml(d.body_text||'(empty)')}</pre>
+                        <h3>Form / parsed</h3><pre>${escapeHtml(d.form_json||'')}</pre>
+                        <h3>Response preview</h3><pre>${escapeHtml(d.response_preview||'')}</pre>`;
+                    document.getElementById('modal-body').innerHTML = grid + sections;
+                } catch (e) {
+                    document.getElementById('modal-body').textContent = 'Error loading event';
+                }
+            }
+
+            function escapeHtml(str) {
+                return String(str).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+            }
+
+            function closeModal() { document.getElementById('modal-bg').style.display = 'none'; }
+            document.getElementById('modal-bg').addEventListener('click', (e) => { if (e.target.id === 'modal-bg') closeModal(); });
+            document.querySelectorAll('.event-row').forEach((tr) => tr.addEventListener('click', () => openModal(tr.dataset.eventId)));
+
+            let refreshTimer = null;
+            function startRefresh() {
+                stopRefresh();
+                refreshTimer = setInterval(refresh, 10000);
+                document.getElementById('refresh-indicator').textContent = 'Auto-refresh on';
+            }
+            function stopRefresh() {
+                if (refreshTimer) clearInterval(refreshTimer);
+                refreshTimer = null;
+                document.getElementById('refresh-indicator').textContent = 'Auto-refresh off';
+            }
+            document.getElementById('refresh-toggle').addEventListener('change', (e) => {
+                if (e.target.checked) startRefresh(); else stopRefresh();
+            });
+
+            window.addEventListener('resize', renderCharts);
+            renderCharts();
+            startRefresh();
         </script>
     </body>
 </html>

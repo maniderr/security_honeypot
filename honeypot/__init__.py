@@ -7,6 +7,7 @@ from .bait_routes import register_bait_routes
 from .dashboard import register_dashboard_routes
 from .db import close_db, init_db
 from .hooks import register_request_hooks
+from .scanner_decoys import register_scanner_decoys
 
 
 def create_app() -> Flask:
@@ -15,6 +16,7 @@ def create_app() -> Flask:
     register_request_hooks(app)
     register_bait_routes(app)
     register_api_routes(app)
+    register_scanner_decoys(app)
     register_dashboard_routes(app)
     return app
 

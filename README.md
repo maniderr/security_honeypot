@@ -16,15 +16,27 @@ The application exposes realistic bait pages, decoy payment-data endpoints, atta
   - Fake refund and export endpoints
   - Seeded decoy payment records stored in SQLite
 
+- **Scanner decoy surface**
+  - Fake sensitive files at `/.env`, `/.env.backup`, `/.git/config`, `/.git/HEAD`, `/.aws/credentials`, `/.ssh/id_rsa`
+  - Fake application bait at `/wp-login.php`, `/wp-admin/`, `/xmlrpc.php`, `/phpmyadmin/`, `/server-status`
+  - Fake operations bait at `/actuator/env`, `/actuator/health`, `/admin/config.json`, `/config.json`, `/backup.sql`
+  - Path discovery bait at `/robots.txt` and `/sitemap.xml`
+
 - **Attack collection**
   - Captures request path, method, query, body, headers, and form fields
   - Scores suspicious activity using markers such as SQLi, XSS, traversal, and recon behavior
+  - Boosts score when scanner decoy paths are accessed
   - Classifies basic attacker personas
+  - Tracks per-visitor session via a signed session cookie
+  - Measures per-request processing latency
 
 - **Enrichment and analysis**
   - Geo/IP enrichment from forwarded IP and geo headers
   - IP scope classification: loopback, private, public, reserved
-  - Dashboard charts for risk, personas, top targeted paths, and IP scope mix
+  - Dashboard charts for risk, personas, top targeted paths, IP scope mix, and time-series activity
+  - Dashboard filters for persona, country, IP scope, minimum risk score, and session identifier
+  - Auto-refresh and per-event drilldown with full request metadata
+  - Realistic response behavior: randomized latency jitter, MFA-style login teasers
 
 ## Project files
 
@@ -48,6 +60,9 @@ The application exposes realistic bait pages, decoy payment-data endpoints, atta
 
 - **`honeypot/api_routes.py`**
   - Login, search, lookup, refund, export, and health endpoints
+
+- **`honeypot/scanner_decoys.py`**
+  - Fake files and applications for common scanner paths
 
 - **`honeypot/dashboard.py`**
   - Dashboard endpoints and rendering
@@ -207,11 +222,26 @@ The dashboard presents:
 
 - **Captured event totals**
 - **High-risk event counts**
+- **Unique attacker sessions**
+- **Average request latency**
 - **Attacker persona counts**
 - **Country and IP scope summaries**
 - **Top targeted paths**
-- **Recent captured attacker activity**
-- **Charts for risk and behavior analysis**
+- **Top attacker sessions**
+- **Recent captured attacker activity with click-through detail**
+- **Time-series chart of activity over the last 60 minutes**
+- **Charts for risk, persona, path, and IP scope analysis**
+
+Dashboard filters can be combined through query parameters:
+
+```text
+http://127.0.0.1:5000/dashboard?persona=active_intruder&country=Germany&min_score=6
+```
+
+Programmatic access:
+
+- **`GET /dashboard/data`** returns the current snapshot as JSON (honors the same filter query parameters).
+- **`GET /dashboard/events/<id>`** returns the full captured request for a specific event.
 
 ## Suggested workflow
 

@@ -63,7 +63,9 @@ def init_db() -> None:
             suspicious_reasons TEXT NOT NULL,
             status_code INTEGER NOT NULL,
             persona TEXT NOT NULL,
-            response_preview TEXT NOT NULL
+            response_preview TEXT NOT NULL,
+            session_id TEXT NOT NULL DEFAULT 'anon',
+            latency_ms INTEGER NOT NULL DEFAULT 0
         )
         """
     )
@@ -73,6 +75,8 @@ def init_db() -> None:
         "geo_region": "TEXT NOT NULL DEFAULT 'Unknown'",
         "geo_city": "TEXT NOT NULL DEFAULT 'Unknown'",
         "ip_scope": "TEXT NOT NULL DEFAULT 'unknown'",
+        "session_id": "TEXT NOT NULL DEFAULT 'anon'",
+        "latency_ms": "INTEGER NOT NULL DEFAULT 0",
     }
     for column_name, column_def in expected_columns.items():
         if column_name not in event_log_columns:
