@@ -2,12 +2,22 @@ from __future__ import annotations
 
 import argparse
 import random
+import sys
 import time
+from pathlib import Path
 from typing import Any
 
-import requests
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from honeypot.config import ATTACKER_ARCHETYPES, ATTACKER_GEO_PROFILES, ATTACKER_PAYLOADS, ATTACKER_USER_AGENTS, DECOY_PAYMENT_RECORDS
+import requests  # noqa: E402
+
+from honeypot.config import (  # noqa: E402
+    ATTACKER_ARCHETYPES,
+    ATTACKER_GEO_PROFILES,
+    ATTACKER_PAYLOADS,
+    ATTACKER_USER_AGENTS,
+    DECOY_PAYMENT_RECORDS,
+)
 
 DEFAULT_BASE_URL = "http://127.0.0.1:5000"
 

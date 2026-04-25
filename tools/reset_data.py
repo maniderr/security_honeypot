@@ -4,8 +4,8 @@ import argparse
 import sqlite3
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / "honeypot.db"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+DB_PATH = PROJECT_ROOT / "honeypot.db"
 
 
 def parse_args() -> argparse.Namespace:

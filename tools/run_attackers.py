@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import argparse
 import random
+import sys
 import time
+from pathlib import Path
 
-from simulate_attackers import DEFAULT_BASE_URL, resolve_base_url, simulate_session
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from tools.simulate_attackers import DEFAULT_BASE_URL, resolve_base_url, simulate_session  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:

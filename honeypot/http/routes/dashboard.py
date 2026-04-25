@@ -4,7 +4,7 @@ import json
 
 from flask import Flask, Response, jsonify, render_template, request
 
-from .services import EventFilters, get_dashboard_snapshot, get_event_detail, list_filter_options
+from ...data import EventFilters, get_dashboard_snapshot, get_event_detail, list_filter_options
 
 
 def _filters_from_query() -> EventFilters:

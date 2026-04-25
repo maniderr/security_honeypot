@@ -7,8 +7,16 @@ import time
 
 from flask import Flask, Response, g, request
 
-from .analysis import detect_persona, enrich_ip_context, evaluate_suspicion, get_client_ip, serialize_form, serialize_headers, utcnow
-from .db import get_db
+from ..analysis import (
+    detect_persona,
+    enrich_ip_context,
+    evaluate_suspicion,
+    get_client_ip,
+    serialize_form,
+    serialize_headers,
+    utcnow,
+)
+from ..data import get_db
 
 SKIP_LOG_PREFIXES: tuple[str, ...] = ("/dashboard", "/health")
 SKIP_LOG_EXACT: frozenset[str] = frozenset({"/favicon.ico"})

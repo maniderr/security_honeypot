@@ -93,6 +93,26 @@ DECOY_PAYMENT_RECORDS = [
     },
 ]
 
+SCANNER_DECOY_PATHS: set[str] = {
+    "/.env",
+    "/.env.backup",
+    "/.git/config",
+    "/.git/HEAD",
+    "/.aws/credentials",
+    "/wp-login.php",
+    "/wp-admin/",
+    "/xmlrpc.php",
+    "/phpmyadmin/",
+    "/phpmyadmin/index.php",
+    "/server-status",
+    "/actuator/env",
+    "/actuator/health",
+    "/admin/config.json",
+    "/config.json",
+    "/backup.sql",
+    "/.ssh/id_rsa",
+}
+
 SUSPICIOUS_MARKERS = [
     "union select",
     " or 1=1",

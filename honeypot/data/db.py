@@ -6,9 +6,9 @@ from typing import Any
 
 from flask import g
 
-from .config import DECOY_PAYMENT_RECORDS
+from ..config import DECOY_PAYMENT_RECORDS
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 DB_PATH = BASE_DIR / "honeypot.db"
 
 

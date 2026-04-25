@@ -3,11 +3,14 @@ from __future__ import annotations
 import argparse
 import csv
 import sqlite3
+import sys
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / "honeypot.db"
-DEFAULT_OUTPUT = BASE_DIR / "captured_events.csv"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+
+DB_PATH = PROJECT_ROOT / "honeypot.db"
+DEFAULT_OUTPUT = PROJECT_ROOT / "captured_events.csv"
 
 
 def parse_args() -> argparse.Namespace:
@@ -27,7 +30,8 @@ def main() -> None:
         """
         SELECT id, timestamp, remote_addr, method, path, query_string, form_json,
                geo_country, geo_region, geo_city, ip_scope, suspicious_score,
-               suspicious_reasons, status_code, persona, response_preview
+               suspicious_reasons, status_code, persona, response_preview,
+               session_id, latency_ms
         FROM event_logs
         ORDER BY id ASC
         """
@@ -52,6 +56,8 @@ def main() -> None:
             "status_code",
             "persona",
             "response_preview",
+            "session_id",
+            "latency_ms",
         ]
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
         writer.writeheader()

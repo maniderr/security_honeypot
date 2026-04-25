@@ -2,26 +2,6 @@ from __future__ import annotations
 
 from flask import Flask, Response
 
-SCANNER_DECOY_PATHS: set[str] = {
-    "/.env",
-    "/.env.backup",
-    "/.git/config",
-    "/.git/HEAD",
-    "/.aws/credentials",
-    "/wp-login.php",
-    "/wp-admin/",
-    "/xmlrpc.php",
-    "/phpmyadmin/",
-    "/phpmyadmin/index.php",
-    "/server-status",
-    "/actuator/env",
-    "/actuator/health",
-    "/admin/config.json",
-    "/config.json",
-    "/backup.sql",
-    "/.ssh/id_rsa",
-}
-
 FAKE_ENV = (
     "APP_ENV=production\n"
     "APP_DEBUG=false\n"
