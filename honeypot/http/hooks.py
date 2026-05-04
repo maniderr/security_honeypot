@@ -24,6 +24,9 @@ SESSION_COOKIE_NAME = "hp_session"
 LATENCY_MIN_SECONDS = 0.02
 LATENCY_MAX_SECONDS = 0.18
 
+FAKE_SERVER_HEADER = "nginx/1.24.0"
+FAKE_POWERED_BY_HEADER = "PHP/8.1.27"
+
 
 def _should_skip(path: str) -> bool:
     if path in SKIP_LOG_EXACT:
@@ -58,6 +61,8 @@ def register_request_hooks(app: Flask) -> None:
             )
         if _should_skip(request.path):
             return response
+        response.headers["Server"] = FAKE_SERVER_HEADER
+        response.headers["X-Powered-By"] = FAKE_POWERED_BY_HEADER
         headers = serialize_headers()
         body_text = request.get_data(cache=True, as_text=True)
         query_string = request.query_string.decode("utf-8", errors="ignore")

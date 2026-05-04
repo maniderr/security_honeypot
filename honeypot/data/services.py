@@ -16,6 +16,8 @@ class EventFilters:
     ip_scope: str | None = None
     min_score: int = 0
     session_id: str | None = None
+    start_time: str | None = None
+    end_time: str | None = None
     limit: int = 250
 
 
@@ -37,6 +39,12 @@ def _build_where(filters: EventFilters) -> tuple[str, list[object]]:
     if filters.session_id:
         clauses.append("session_id = ?")
         params.append(filters.session_id)
+    if filters.start_time:
+        clauses.append("timestamp >= ?")
+        params.append(filters.start_time)
+    if filters.end_time:
+        clauses.append("timestamp <= ?")
+        params.append(filters.end_time)
     where_clause = (" WHERE " + " AND ".join(clauses)) if clauses else ""
     return where_clause, params
 
@@ -173,8 +181,52 @@ def get_dashboard_snapshot(filters: EventFilters | None = None) -> dict[str, obj
             "ip_scope": filters.ip_scope or "",
             "min_score": filters.min_score,
             "session_id": filters.session_id or "",
+            "start_time": filters.start_time or "",
+            "end_time": filters.end_time or "",
         },
     }
+
+
+EXPORT_COLUMNS: list[str] = [
+    "id",
+    "timestamp",
+    "session_id",
+    "remote_addr",
+    "method",
+    "path",
+    "query_string",
+    "status_code",
+    "suspicious_score",
+    "suspicious_reasons",
+    "persona",
+    "geo_country",
+    "geo_region",
+    "geo_city",
+    "ip_scope",
+    "latency_ms",
+]
+
+
+def export_events_csv(filters: EventFilters | None = None) -> str:
+    filters = filters or EventFilters(limit=10000)
+    db = get_db()
+    where_clause, params = _build_where(filters)
+    rows = db.execute(
+        f"""
+        SELECT {", ".join(EXPORT_COLUMNS)}
+        FROM event_logs
+        {where_clause}
+        ORDER BY id DESC
+        LIMIT ?
+        """,
+        [*params, filters.limit],
+    ).fetchall()
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(EXPORT_COLUMNS)
+    for row in rows:
+        writer.writerow([row[col] for col in EXPORT_COLUMNS])
+    return buffer.getvalue()
 
 
 def get_event_detail(event_id: int) -> dict[str, object] | None:

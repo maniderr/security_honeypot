@@ -24,19 +24,25 @@ The application exposes realistic bait pages, decoy payment-data endpoints, atta
 
 - **Attack collection**
   - Captures request path, method, query, body, headers, and form fields
-  - Scores suspicious activity using markers such as SQLi, XSS, traversal, and recon behavior
+  - Scores suspicious activity using a broad marker library covering SQLi, XSS, path traversal (literal and percent-encoded), log4shell (`${jndi:`), SSTI (`{{7*7}}`, `<%= `), NoSQLi (`$where:`, `$ne:`), command injection, and post-exploitation patterns (`powershell -e`, `wget http`, `nc -e`, `/bin/sh`)
   - Boosts score when scanner decoy paths are accessed
   - Classifies basic attacker personas
   - Tracks per-visitor session via a signed session cookie
   - Measures per-request processing latency
 
+- **Realistic response behavior**
+  - Fake server fingerprint headers on every attacker-facing response (`Server: nginx/1.24.0`, `X-Powered-By: PHP/8.1.27`)
+  - Randomized latency jitter (20–180 ms) to mimic a real gateway
+  - MFA-style `/login` teaser that never grants an instant token even on valid decoy credentials
+  - Sliding-window rate limit on `/login` (5 attempts per 60 s per session) returning `429 Too Many Requests` with `Retry-After: 60`
+
 - **Enrichment and analysis**
   - Geo/IP enrichment from forwarded IP and geo headers
   - IP scope classification: loopback, private, public, reserved
   - Dashboard charts for risk, personas, top targeted paths, IP scope mix, and time-series activity
-  - Dashboard filters for persona, country, IP scope, minimum risk score, and session identifier
+  - Dashboard filters for persona, country, IP scope, minimum risk score, session identifier, and UTC time range
+  - Filter-aware CSV export of captured events from the dashboard
   - Auto-refresh and per-event drilldown with full request metadata
-  - Realistic response behavior: randomized latency jitter, MFA-style login teasers
 
 ## Project layout
 
@@ -70,17 +76,18 @@ security_honeypot/
     └── reset_data.py                   clears captured events
 ```
 
+## Requirements
+
+- **Python 3.10+** (the codebase uses PEP 604 union syntax such as `dict | None`)
+- **Flask** and **requests** (installed via `requirements.txt`)
+
 ## Installation
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Package structure
-
-The application is organized into focused modules so that routes, database code, logging hooks, templates, and analytics logic are separated.
-
-This structure supports future extension of endpoints, dashboard features, and analysis workflows without relying on a single monolithic file.
+The application is organized into focused subpackages so that routes, database code, request hooks, analysis, templates, and operator tooling are separated. This supports extending endpoints, dashboard features, and analysis workflows without a monolithic file.
 
 ## Running the honeypot
 
@@ -220,10 +227,20 @@ Dashboard filters can be combined through query parameters:
 http://127.0.0.1:5000/dashboard?persona=active_intruder&country=Germany&min_score=6
 ```
 
+Supported filter parameters:
+
+- **`persona`** — one of the detected persona labels
+- **`country`** — enriched country name
+- **`ip_scope`** — one of `loopback`, `private`, `public`, `reserved`
+- **`min_score`** — minimum suspicion score
+- **`session_id`** — captured `hp_session` cookie value
+- **`start_time`** / **`end_time`** — UTC timestamps in `YYYY-MM-DDTHH:MM` (or full ISO 8601)
+
 Programmatic access:
 
-- **`GET /dashboard/data`** returns the current snapshot as JSON (honors the same filter query parameters).
-- **`GET /dashboard/events/<id>`** returns the full captured request for a specific event.
+- **`GET /dashboard/data`** returns the current snapshot as JSON (honors the same filter query parameters)
+- **`GET /dashboard/events/<id>`** returns the full captured request for a specific event
+- **`GET /dashboard/export`** returns a filter-aware CSV download of captured events (honors the same filter query parameters)
 
 ## Suggested workflow
 
