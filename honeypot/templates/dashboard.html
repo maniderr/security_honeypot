@@ -190,12 +190,15 @@
                     ctx.fillRect(x, y, barWidth, barHeight);
                     ctx.fillStyle = '#e2e8f0';
                     ctx.font = '11px Arial';
-                    ctx.fillText(String(value), x, y - 6);
-                    ctx.save();
-                    ctx.translate(x + 4, h - 12);
-                    ctx.rotate(-0.35);
-                    ctx.fillText(String(entry[0]).slice(0, 18), 0, 0);
-                    ctx.restore();
+                    ctx.textAlign = 'center';
+                    ctx.fillText(String(value), x + barWidth / 2, y - 6);
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.font = '10px Arial';
+                    const maxChars = Math.max(4, Math.floor(barWidth / 6));
+                    const label = String(entry[0]);
+                    const truncated = label.length > maxChars ? label.slice(0, maxChars - 1) + '…' : label;
+                    ctx.fillText(truncated, x + barWidth / 2, h - 8);
+                    ctx.textAlign = 'left';
                 });
             }
 
