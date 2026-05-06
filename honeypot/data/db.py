@@ -81,27 +81,25 @@ def init_db() -> None:
     for column_name, column_def in expected_columns.items():
         if column_name not in event_log_columns:
             db.execute(f"ALTER TABLE event_logs ADD COLUMN {column_name} {column_def}")
-    existing = db.execute("SELECT COUNT(*) AS count FROM payment_records").fetchone()["count"]
-    if existing == 0:
-        db.executemany(
-            """
-            INSERT INTO payment_records (
-                record_id, cardholder, last4, brand, amount, currency, status, email
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            [
-                (
-                    row["record_id"],
-                    row["cardholder"],
-                    row["last4"],
-                    row["brand"],
-                    row["amount"],
-                    row["currency"],
-                    row["status"],
-                    row["email"],
-                )
-                for row in DECOY_PAYMENT_RECORDS
-            ],
-        )
+    db.executemany(
+        """
+        INSERT OR IGNORE INTO payment_records (
+            record_id, cardholder, last4, brand, amount, currency, status, email
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        [
+            (
+                row["record_id"],
+                row["cardholder"],
+                row["last4"],
+                row["brand"],
+                row["amount"],
+                row["currency"],
+                row["status"],
+                row["email"],
+            )
+            for row in DECOY_PAYMENT_RECORDS
+        ],
+    )
     db.commit()
     db.close()
